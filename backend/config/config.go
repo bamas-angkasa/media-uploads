@@ -58,7 +58,12 @@ type MediaConfig struct {
 }
 
 func Load() *Config {
-	viper.AutomaticEnv()
+	// Load .env file if present (ignored if missing)
+	viper.SetConfigFile(".env")
+	viper.SetConfigType("env")
+	_ = viper.ReadInConfig() // error is intentionally ignored — env vars take precedence
+
+	viper.AutomaticEnv() // real env vars override .env values
 
 	viper.SetDefault("PORT", "8080")
 	viper.SetDefault("APP_ENV", "development")

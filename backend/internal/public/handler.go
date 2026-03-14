@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/media-share/internal/auth"
+	"github.com/yourusername/media-share/internal/media"
 )
 
 type Handler struct {
@@ -32,7 +33,7 @@ func (h *Handler) Explore(c *gin.Context) {
 		return
 	}
 	if items == nil {
-		items = []mediaItem{}
+		items = []media.Media{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -60,7 +61,7 @@ func (h *Handler) Search(c *gin.Context) {
 		return
 	}
 	if items == nil {
-		items = []mediaItem{}
+		items = []media.Media{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

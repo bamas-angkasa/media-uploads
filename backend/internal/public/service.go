@@ -249,7 +249,7 @@ func (s *Service) enrichWithURLs(ctx context.Context, m *media.Media) {
 	}
 }
 
-func (s *Service) scanMediaRows(_ context.Context, rows pgx.Rows) ([]media.Media, error) {
+func (s *Service) scanMediaRows(ctx context.Context, rows pgx.Rows) ([]media.Media, error) {
 	var result []media.Media
 	for rows.Next() {
 		m := media.Media{}

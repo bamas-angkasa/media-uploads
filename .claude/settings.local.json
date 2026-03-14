@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node -e \"const l = require\\(''lucide-react''\\); console.log\\(''Image:'', typeof l.Image, ''ImageIcon:'', typeof l.ImageIcon\\)\")"
+    ]
+  }
+}

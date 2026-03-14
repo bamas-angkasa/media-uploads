@@ -43,10 +43,11 @@ func NewS3Client(cfg config.AWSConfig) (*S3Client, error) {
 // PresignPut generates a presigned PUT URL for direct client upload.
 func (c *S3Client) PresignPut(ctx context.Context, key, contentType string, sizeBytes int64, ttl time.Duration) (string, error) {
 	req, err := c.presigner.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket:        aws.String(c.bucket),
-		Key:           aws.String(key),
-		ContentType:   aws.String(contentType),
-		ContentLength: aws.Int64(sizeBytes),
+		Bucket:      aws.String(c.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+		// ContentLength intentionally omitted — including it adds content-length
+		// to SignedHeaders which breaks browser CORS preflight checks.
 	}, s3.WithPresignExpires(ttl))
 	if err != nil {
 		return "", fmt.Errorf("presign put: %w", err)
@@ -66,9 +67,15 @@ func (c *S3Client) PresignGet(ctx context.Context, key string, ttl time.Duration
 	return req.URL, nil
 }
 
-// CDNUrl returns the public CDN URL for a given S3 key.
+// CDNUrl returns the CDN URL for a key if CDN_BASE_URL is set,
+// otherwise falls back to a direct S3 HTTPS URL.
+// Swap to CloudFront later by simply setting CDN_BASE_URL in .env.
 func (c *S3Client) CDNUrl(key string) string {
-	return c.cdnBase + "/" + key
+	if c.cdnBase != "" {
+		return c.cdnBase + "/" + key
+	}
+	// Direct S3 URL (public-read objects only)
+	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", c.bucket, key)
 }
 
 // HeadObject checks if an object exists.
