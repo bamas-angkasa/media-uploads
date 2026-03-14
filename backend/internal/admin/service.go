@@ -257,11 +257,13 @@ func (s *Service) ListReports(ctx context.Context, status string, page, pageSize
 	rows, err := s.db.Query(ctx,
 		fmt.Sprintf(`
 		SELECT r.id, r.reason, r.status, r.created_at,
-		       m.short_code, m.title,
-		       u.username AS reporter_username
+		       m.id AS media_id, m.short_code, m.title,
+		       u.username AS reporter_username,
+		       mf.s3_key AS thumb_key
 		FROM reports r
 		JOIN media m ON r.media_id = m.id
 		JOIN users u ON r.reporter_id = u.id
+		LEFT JOIN media_files mf ON mf.media_id = m.id AND mf.variant = 'thumbnail'
 		%s ORDER BY r.created_at DESC LIMIT $%d OFFSET $%d`,
 			where, idx, idx+1),
 		dataArgs...,
@@ -273,14 +275,21 @@ func (s *Service) ListReports(ctx context.Context, status string, page, pageSize
 
 	var result []map[string]interface{}
 	for rows.Next() {
-		var rID, reason, rStatus, shortCode, reporterUsername string
-		var title *string
+		var rID, reason, rStatus, mediaID, shortCode, reporterUsername string
+		var title, thumbKey *string
 		var createdAt time.Time
 
-		rows.Scan(&rID, &reason, &rStatus, &createdAt, &shortCode, &title, &reporterUsername)
+		rows.Scan(&rID, &reason, &rStatus, &createdAt, &mediaID, &shortCode, &title, &reporterUsername, &thumbKey)
+
+		thumbnailURL := ""
+		if thumbKey != nil && *thumbKey != "" {
+			thumbnailURL = s.s3.CDNUrl(*thumbKey)
+		}
+
 		result = append(result, map[string]interface{}{
 			"id": rID, "reason": reason, "status": rStatus, "created_at": createdAt,
-			"media_short_code": shortCode, "media_title": title, "reporter": reporterUsername,
+			"media_id": mediaID, "media_short_code": shortCode, "media_title": title,
+			"reporter": reporterUsername, "thumbnail_url": thumbnailURL,
 		})
 	}
 	return result, total, rows.Err()
